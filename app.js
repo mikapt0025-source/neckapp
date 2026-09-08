@@ -6,11 +6,13 @@ const angleText = document.getElementById('angleText');
 const weightText = document.getElementById('weightText');
 const statusText = document.getElementById('statusText');
 const switchCamBtn = document.getElementById('switchCamBtn');
+const saveSnapBtn = document.getElementById('saveSnapBtn');
 
-let currentFacingMode = 'user'; // 'user'(インカメラ) または 'environment'(アウトカメラ)
+let currentFacingMode = 'user'; 
 let camera = null;
+let currentAngle = 0;
+let currentLoadInfo = null;
 
-// 角度から首の負荷(kg)を決定する関数
 function estimateNeckLoad(angle) {
     if (angle <= 5) return { weight: "4.5 〜 5", status: "正常（理想的な姿勢）", color: "#2ea44f" };
     if (angle <= 15) return { weight: "約 12", status: "軽度の負荷（少し前傾）", color: "#e3b341" };
@@ -19,14 +21,25 @@ function estimateNeckLoad(angle) {
     return { weight: "約 27", status: "危険（強い負荷がかかっています）", color: "#8b0000" };
 }
 
-// MediaPipe解析結果の描画ロジック
 function onResults(results) {
+    // カメラの縦横比に合わせてキャンバス解像度を自動追従（歪み防止の核心）
+    if (videoElement.videoWidth && videoElement.videoHeight) {
+        if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+        }
+    }
+
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // カメラ映像を描画
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
+    currentLoadInfo = null;
+    currentAngle = 0;
+
     if (results.poseLandmarks) {
-        // 左右のうち、カメラによく映っている側の「耳」と「肩」を自動選択
         const leftEar = results.poseLandmarks[7];
         const rightEar = results.poseLandmarks[8];
         const leftShoulder = results.poseLandmarks[11];
@@ -41,66 +54,101 @@ function onResults(results) {
             const shoulderX = shoulder.x * canvasElement.width;
             const shoulderY = shoulder.y * canvasElement.height;
 
-            // 垂直線に対する前傾角度を計算
             const dx = Math.abs(earX - shoulderX);
             const dy = shoulderY - earY;
-            let angle = Math.round(Math.atan2(dx, dy) * (180 / Math.PI));
+            currentAngle = Math.round(Math.atan2(dx, dy) * (180 / Math.PI));
 
-            const loadInfo = estimateNeckLoad(angle);
+            currentLoadInfo = estimateNeckLoad(currentAngle);
 
-            // UIの更新
-            angleText.innerText = angle;
-            weightText.innerText = `約 ${loadInfo.weight} kg`;
-            statusText.innerText = loadInfo.status;
-            statusText.style.color = loadInfo.color;
+            angleText.innerText = currentAngle;
+            weightText.innerText = `約 ${currentLoadInfo.weight} kg`;
+            statusText.innerText = currentLoadInfo.status;
+            statusText.style.color = currentLoadInfo.color;
 
-            // 骨格と垂直基準線の描画
+            // 骨格線
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
             canvasCtx.lineTo(earX, earY);
-            canvasCtx.strokeStyle = loadInfo.color;
-            canvasCtx.lineWidth = 5;
+            canvasCtx.strokeStyle = currentLoadInfo.color;
+            canvasCtx.lineWidth = Math.max(6, canvasElement.width * 0.01);
             canvasCtx.stroke();
 
-            // 垂直線（点線）
+            // 垂直基準線
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
-            canvasCtx.lineTo(shoulderX, shoulderY - 120);
+            canvasCtx.lineTo(shoulderX, shoulderY - (canvasElement.height * 0.25));
             canvasCtx.strokeStyle = "#007aff";
-            canvasCtx.setLineDash([6, 6]);
-            canvasCtx.lineWidth = 2;
+            canvasCtx.setLineDash([8, 8]);
+            canvasCtx.lineWidth = Math.max(3, canvasElement.width * 0.005);
             canvasCtx.stroke();
             canvasCtx.setLineDash([]);
         } else {
             statusText.innerText = "耳と肩が映るよう真横を向いてください";
             statusText.style.color = "#666";
+            weightText.innerText = "-- kg";
+            angleText.innerText = "--";
         }
     }
     canvasCtx.restore();
 }
 
-// AIモデル初期化
 const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
 pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
 pose.onResults(onResults);
 
-// カメラ起動処理
 function startCamera(facingMode) {
     if (camera) { camera.stop(); }
     camera = new Camera(videoElement, {
         onFrame: async () => { await pose.send({image: videoElement}); },
-        width: 480,
-        height: 640,
         facingMode: facingMode
     });
     camera.start();
 }
 
-// カメラ切替ボタンのイベント
 switchCamBtn.addEventListener('click', () => {
     currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
     startCamera(currentFacingMode);
 });
 
-// 初回起動
+saveSnapBtn.addEventListener('click', () => {
+    if (!currentLoadInfo) {
+        alert("負荷が計測されていません。真横を向いてください。");
+        return;
+    }
+
+    const saveCanvas = document.createElement('canvas');
+    saveCanvas.width = canvasElement.width;
+    saveCanvas.height = canvasElement.height;
+    const saveCtx = saveCanvas.getContext('2d');
+
+    saveCtx.drawImage(canvasElement, 0, 0);
+
+    const padding = saveCanvas.width * 0.05;
+    const boxHeight = saveCanvas.height * 0.22;
+
+    saveCtx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    saveCtx.fillRect(padding, padding, saveCanvas.width - (padding * 2), boxHeight);
+
+    saveCtx.fillStyle = "#fff";
+    saveCtx.font = `bold ${saveCanvas.width * 0.045}px sans-serif`;
+    saveCtx.fillText("首への推定負荷", padding + 20, padding + (boxHeight * 0.25));
+
+    saveCtx.fillStyle = currentLoadInfo.color;
+    saveCtx.font = `bold ${saveCanvas.width * 0.12}px sans-serif`;
+    saveCtx.fillText(`約 ${currentLoadInfo.weight} kg`, padding + 20, padding + (boxHeight * 0.6));
+
+    saveCtx.fillStyle = "#fff";
+    saveCtx.font = `${saveCanvas.width * 0.04}px sans-serif`;
+    saveCtx.fillText(`前傾角度: ${currentAngle}°  |  ${currentLoadInfo.status}`, padding + 20, padding + (boxHeight * 0.85));
+
+    const dataUrl = saveCanvas.toDataURL('image/png');
+    const win = window.open();
+    if (win) {
+        win.document.write('<iframe src="' + dataUrl  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+        win.document.title = "首の負荷チェック写真";
+    } else {
+        alert('ポップアップがブロックされました。許可してください。');
+    }
+});
+
 startCamera(currentFacingMode);

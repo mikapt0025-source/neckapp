@@ -8,6 +8,7 @@ const statusText = document.getElementById('statusText');
 const tiltText = document.getElementById('tiltText');
 const switchCamBtn = document.getElementById('switchCamBtn');
 const saveSnapBtn = document.getElementById('saveSnapBtn');
+const toggleTiltBtn = document.getElementById('toggleTiltBtn');
 const gridOverlay = document.getElementById('gridOverlay');
 
 const previewModal = document.getElementById('previewModal');
@@ -19,18 +20,53 @@ let camera = null;
 let currentAngle = 0;
 let currentLoadInfo = null;
 
-let isDeviceVertical = true; // センサー未対応端末でのフリーズ防止のため初期値はtrue
+let useTiltCheck = true; // 傾きチェックを行うかのフラグ
+let isDeviceVertical = true;
 let currentPitch = null;
 
-// スマホの傾き検知（85°〜95°で緑発光）
-if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', (event) => {
-        if (event.beta !== null) {
-            currentPitch = Math.round(Math.abs(event.beta));
-            isDeviceVertical = (currentPitch >= 85 && currentPitch <= 95);
-        }
-    });
+// iOS向けセンサーの起動・許可リクエスト
+function requestSensorPermission() {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+            .then(response => {
+                if (response === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                }
+            })
+            .catch(console.error);
+    } else if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
 }
+
+function handleOrientation(event) {
+    if (event.beta !== null) {
+        currentPitch = Math.round(Math.abs(event.beta));
+        // 85度〜95度の時だけ垂直と判定
+        isDeviceVertical = (currentPitch >= 85 && currentPitch <= 95);
+    }
+}
+
+// 画面のどこかを初めてタップした時にセンサー許可をリクエスト
+document.body.addEventListener('click', () => {
+    requestSensorPermission();
+}, { once: true });
+
+// 傾き制限 ON / OFF の切り替えボタン処理
+toggleTiltBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // ボディのクリックイベントと重複させない
+    requestSensorPermission();
+    
+    useTiltCheck = !useTiltCheck;
+    if (useTiltCheck) {
+        toggleTiltBtn.innerText = "📐 傾き制限: ON";
+        toggleTiltBtn.style.backgroundColor = "rgba(52, 199, 89, 0.9)";
+    } else {
+        toggleTiltBtn.innerText = "📐 傾き制限: OFF";
+        toggleTiltBtn.style.backgroundColor = "rgba(142, 142, 147, 0.9)";
+        gridOverlay.classList.remove('is-level');
+    }
+});
 
 function estimateNeckLoad(angle) {
     if (angle <= 5) return { weight: "4.5 〜 5", status: "正常（理想的な姿勢）", color: "#2ea44f" };
@@ -55,24 +91,26 @@ function onResults(results) {
     currentLoadInfo = null;
     currentAngle = 0;
 
-    // スマホ傾きのリアルタイム数値表示
+    // 傾きの数値表示
     if (currentPitch !== null) {
         tiltText.innerText = `📱 スマホ傾き: ${currentPitch}° (目標: 90°)`;
     } else {
-        tiltText.innerText = `📱 スマホ傾き: 垂直に立ててください`;
+        tiltText.innerText = `📱 画面タップで傾き検知開始`;
     }
 
-    // 傾き判定による表示切り替え
-    if (isDeviceVertical) {
-        gridOverlay.classList.add('is-level');
-    } else {
-        gridOverlay.classList.remove('is-level');
-        statusText.innerText = "📱 スマホをまっすぐ立ててください";
-        statusText.style.color = "#f85149";
-        weightText.innerText = "-- kg";
-        angleText.innerText = "--";
-        canvasCtx.restore();
-        return;
+    // 傾きチェックがONかつ、垂直でない場合の処理
+    if (useTiltCheck) {
+        if (isDeviceVertical) {
+            gridOverlay.classList.add('is-level');
+        } else {
+            gridOverlay.classList.remove('is-level');
+            statusText.innerText = "📱 スマホをまっすぐ立ててください";
+            statusText.style.color = "#f85149";
+            weightText.innerText = "-- kg";
+            angleText.innerText = "--";
+            canvasCtx.restore();
+            return;
+        }
     }
 
     if (results.poseLandmarks) {
@@ -144,14 +182,17 @@ function startCamera(facingMode) {
     camera.start();
 }
 
-switchCamBtn.addEventListener('click', () => {
+switchCamBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    requestSensorPermission();
     currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
     startCamera(currentFacingMode);
 });
 
-saveSnapBtn.addEventListener('click', () => {
+saveSnapBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentLoadInfo) {
-        alert("負荷が計測されていません。真横を向き、スマホを垂直（グリッド緑色）にして撮影してください。");
+        alert("負荷が計測されていません。真横を向き、スマホを垂直にして撮影してください。");
         return;
     }
 

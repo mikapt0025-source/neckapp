@@ -20,11 +20,10 @@ let camera = null;
 let currentAngle = 0;
 let currentLoadInfo = null;
 
-let useTiltCheck = true; // 傾きチェックを行うかのフラグ
+let useTiltCheck = true;
 let isDeviceVertical = true;
 let currentPitch = null;
 
-// iOS向けセンサーの起動・許可リクエスト
 function requestSensorPermission() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
@@ -42,19 +41,16 @@ function requestSensorPermission() {
 function handleOrientation(event) {
     if (event.beta !== null) {
         currentPitch = Math.round(Math.abs(event.beta));
-        // 85度〜95度の時だけ垂直と判定
         isDeviceVertical = (currentPitch >= 85 && currentPitch <= 95);
     }
 }
 
-// 画面のどこかを初めてタップした時にセンサー許可をリクエスト
 document.body.addEventListener('click', () => {
     requestSensorPermission();
 }, { once: true });
 
-// 傾き制限 ON / OFF の切り替えボタン処理
 toggleTiltBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // ボディのクリックイベントと重複させない
+    e.stopPropagation();
     requestSensorPermission();
     
     useTiltCheck = !useTiltCheck;
@@ -91,14 +87,12 @@ function onResults(results) {
     currentLoadInfo = null;
     currentAngle = 0;
 
-    // 傾きの数値表示
     if (currentPitch !== null) {
         tiltText.innerText = `📱 スマホ傾き: ${currentPitch}° (目標: 90°)`;
     } else {
         tiltText.innerText = `📱 画面タップで傾き検知開始`;
     }
 
-    // 傾きチェックがONかつ、垂直でない場合の処理
     if (useTiltCheck) {
         if (isDeviceVertical) {
             gridOverlay.classList.add('is-level');
@@ -189,6 +183,7 @@ switchCamBtn.addEventListener('click', (e) => {
     startCamera(currentFacingMode);
 });
 
+// ========= 写真保存処理（画像左上に数値をくっきり刻印） =========
 saveSnapBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!currentLoadInfo) {
@@ -201,26 +196,32 @@ saveSnapBtn.addEventListener('click', (e) => {
     saveCanvas.height = canvasElement.height;
     const saveCtx = saveCanvas.getContext('2d');
 
+    // 1. カメラ画像＋骨格線を描画
     saveCtx.drawImage(canvasElement, 0, 0);
 
+    // 2. 文字のスタイル設定（見やすいよう黒色のフチ取り付き）
+    const fontSize = Math.max(24, saveCanvas.width * 0.05);
     const padding = saveCanvas.width * 0.05;
-    const boxHeight = saveCanvas.height * 0.22;
 
-    saveCtx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    saveCtx.fillRect(padding, padding, saveCanvas.width - (padding * 2), boxHeight);
+    saveCtx.font = `bold ${fontSize}px sans-serif`;
+    saveCtx.lineWidth = Math.max(4, fontSize * 0.1);
+    saveCtx.strokeStyle = "rgba(0, 0, 0, 0.8)"; // 黒縁取り
 
-    saveCtx.fillStyle = "#fff";
-    saveCtx.font = `bold ${saveCanvas.width * 0.045}px sans-serif`;
-    saveCtx.fillText("首への推定負荷", padding + 20, padding + (boxHeight * 0.25));
-
+    // 1行目: 首の負荷 (kg)
+    const text1 = `首の負荷: 約 ${currentLoadInfo.weight} kg`;
+    saveCtx.strokeText(text1, padding, padding + fontSize);
     saveCtx.fillStyle = currentLoadInfo.color;
-    saveCtx.font = `bold ${saveCanvas.width * 0.12}px sans-serif`;
-    saveCtx.fillText(`約 ${currentLoadInfo.weight} kg`, padding + 20, padding + (boxHeight * 0.6));
+    saveCtx.fillText(text1, padding, padding + fontSize);
 
-    saveCtx.fillStyle = "#fff";
-    saveCtx.font = `${saveCanvas.width * 0.04}px sans-serif`;
-    saveCtx.fillText(`前傾角度: ${currentAngle}°  |  ${currentLoadInfo.status}`, padding + 20, padding + (boxHeight * 0.85));
+    // 2行目: 前傾角度 (°) と ステータス
+    const text2 = `前傾角度: ${currentAngle}° (${currentLoadInfo.status})`;
+    saveCtx.font = `bold ${fontSize * 0.7}px sans-serif`;
+    saveCtx.lineWidth = Math.max(3, fontSize * 0.07);
+    saveCtx.strokeText(text2, padding, padding + (fontSize * 1.9));
+    saveCtx.fillStyle = "#ffffff";
+    saveCtx.fillText(text2, padding, padding + (fontSize * 1.9));
 
+    // 生成した画像をプレビュー画面に表示
     previewImage.src = saveCanvas.toDataURL('image/png');
     previewModal.style.display = 'flex';
 });

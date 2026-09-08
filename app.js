@@ -7,6 +7,7 @@ const weightText = document.getElementById('weightText');
 const statusText = document.getElementById('statusText');
 const switchCamBtn = document.getElementById('switchCamBtn');
 const saveSnapBtn = document.getElementById('saveSnapBtn');
+const gridOverlay = document.getElementById('gridOverlay');
 
 const previewModal = document.getElementById('previewModal');
 const previewImage = document.getElementById('previewImage');
@@ -16,15 +17,14 @@ let currentFacingMode = 'user';
 let camera = null;
 let currentAngle = 0;
 let currentLoadInfo = null;
-let isDeviceVertical = true;
+let isDeviceVertical = false;
 
-// スマホの傾き（ジャイロ）検知機能
+// スマホの傾き検知（±5度以内＝85°〜95°でグリーン点灯）
 if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', (event) => {
         if (event.beta !== null) {
             const pitch = Math.abs(event.beta);
-            // 75度〜105度の範囲（垂直±15度）に収まっているか判定
-            isDeviceVertical = (pitch >= 75 && pitch <= 105);
+            isDeviceVertical = (pitch >= 85 && pitch <= 95);
         }
     });
 }
@@ -38,7 +38,6 @@ function estimateNeckLoad(angle) {
 }
 
 function onResults(results) {
-    // 画面歪み防止：カメラ解像度にキャンバス解像度を自動追従
     if (videoElement.videoWidth && videoElement.videoHeight) {
         if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
             canvasElement.width = videoElement.videoWidth;
@@ -53,8 +52,11 @@ function onResults(results) {
     currentLoadInfo = null;
     currentAngle = 0;
 
-    // スマホが傾いている場合は警告を表示して計測停止
-    if (!isDeviceVertical) {
+    // スマホの傾き状態によってグリッドの色と判定を制御
+    if (isDeviceVertical) {
+        gridOverlay.classList.add('is-level'); // グリッドを緑色に発光させる
+    } else {
+        gridOverlay.classList.remove('is-level'); // 白い半透明に戻す
         statusText.innerText = "📱 スマホをまっすぐ立ててください";
         statusText.style.color = "#f85149";
         weightText.innerText = "-- kg";
@@ -139,7 +141,7 @@ switchCamBtn.addEventListener('click', () => {
 
 saveSnapBtn.addEventListener('click', () => {
     if (!currentLoadInfo) {
-        alert("負荷が計測されていません。真横を向き、スマホを垂直にして撮影してください。");
+        alert("負荷が計測されていません。真横を向き、スマホを垂直（グリッド緑色）にして撮影してください。");
         return;
     }
 

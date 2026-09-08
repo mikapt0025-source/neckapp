@@ -12,7 +12,7 @@
         canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
 
-        /* ======== カメラ用グリッド線（水準器） ======== */
+        /* ======== カメラ用細密グリッド線（水準器） ======== */
         #gridOverlay {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -22,19 +22,26 @@
 
         .grid-line {
             position: absolute;
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.2);
             transition: background-color 0.2s, box-shadow 0.2s;
         }
 
-        .vert-1 { left: 33.33%; top: 0; width: 1.5px; height: 100%; }
-        .vert-2 { left: 66.66%; top: 0; width: 1.5px; height: 100%; }
-        .horiz-1 { top: 33.33%; left: 0; height: 1.5px; width: 100%; }
-        .horiz-2 { top: 66.66%; left: 0; height: 1.5px; width: 100%; }
+        /* 縦方向のライン（20%, 40%, 60%, 80%） */
+        .v1 { left: 20%; top: 0; width: 1px; height: 100%; }
+        .v2 { left: 40%; top: 0; width: 1px; height: 100%; }
+        .v3 { left: 60%; top: 0; width: 1px; height: 100%; }
+        .v4 { left: 80%; top: 0; width: 1px; height: 100%; }
 
-        /* 垂直（水平OK）になった時に緑色に発光 */
+        /* 横方向のライン（20%, 40%, 60%, 80%） */
+        .h1 { top: 20%; left: 0; height: 1px; width: 100%; }
+        .h2 { top: 40%; left: 0; height: 1px; width: 100%; }
+        .h3 { top: 60%; left: 0; height: 1px; width: 100%; }
+        .h4 { top: 80%; left: 0; height: 1px; width: 100%; }
+
+        /* 垂直（85°〜95°）になった時に緑色に発光 */
         #gridOverlay.is-level .grid-line {
             background-color: #00ff66;
-            box-shadow: 0 0 8px #00ff66;
+            box-shadow: 0 0 6px #00ff66;
         }
 
         /* ======== オーバーレイUI ======== */
@@ -45,8 +52,8 @@
             transform: translateX(-50%);
             width: 90%;
             max-width: 400px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(5px);
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
             border-radius: 16px;
             padding: 15px 20px;
             box-sizing: border-box;
@@ -55,10 +62,11 @@
             z-index: 5;
         }
 
-        .title { font-size: 14px; color: #555; margin-bottom: 5px; font-weight: bold; }
-        .result-val { font-size: 32px; font-weight: 900; margin: 5px 0; color: #111; }
-        .angle-val { font-size: 16px; color: #333; margin-bottom: 5px; }
-        .status { font-size: 15px; font-weight: bold; margin-top: 5px; }
+        .title { font-size: 13px; color: #666; margin-bottom: 3px; font-weight: bold; }
+        .result-val { font-size: 32px; font-weight: 900; margin: 2px 0; color: #111; }
+        .angle-val { font-size: 15px; color: #333; font-weight: bold; margin-bottom: 2px; }
+        .tilt-val { font-size: 12px; color: #007aff; font-weight: bold; margin-bottom: 6px; }
+        .status { font-size: 14px; font-weight: bold; }
         
         .button-container {
             position: absolute;
@@ -130,18 +138,23 @@
     <video id="video" playsinline></video>
     <canvas id="canvas" width="720" height="1280"></canvas>
 
-    <!-- 水平・垂直検知用グリッド -->
+    <!-- 細密グリッドライン -->
     <div id="gridOverlay">
-        <div class="grid-line vert-1"></div>
-        <div class="grid-line vert-2"></div>
-        <div class="grid-line horiz-1"></div>
-        <div class="grid-line horiz-2"></div>
+        <div class="grid-line v1"></div>
+        <div class="grid-line v2"></div>
+        <div class="grid-line v3"></div>
+        <div class="grid-line v4"></div>
+        <div class="grid-line h1"></div>
+        <div class="grid-line h2"></div>
+        <div class="grid-line h3"></div>
+        <div class="grid-line h4"></div>
     </div>
 
     <div class="overlay-card">
         <div class="title">首への推定負荷</div>
         <div class="result-val" id="weightText">準備中...</div>
-        <div class="angle-val">前傾角度: <span id="angleText">--</span>°</div>
+        <div class="angle-val">首の前傾角度: <span id="angleText">--</span>°</div>
+        <div class="tilt-val" id="tiltText">📱 スマホ傾き: --° (目標: 90°)</div>
         <div class="status" id="statusText">真横を向いてカメラに映ってください</div>
     </div>
 

@@ -7,14 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
     <style>
-        /* 画面全体のスクロールを禁止し、背景を黒に */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         
-        /* キャンバスを全画面に広げる */
         canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
 
-        /* 計測結果を画面上部に半透明のパネルで重ねる */
         .overlay-card {
             position: absolute;
             top: 20px;
@@ -37,20 +34,21 @@
         .angle-val { font-size: 16px; color: #333; margin-bottom: 5px; }
         .status { font-size: 15px; font-weight: bold; margin-top: 5px; }
         
-        /* ボタンを画面下部に配置するコンテナ */
         .button-container {
             position: absolute;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
+            gap: 15px;
             z-index: 10;
+            width: 90%;
+            justify-content: center;
         }
 
         button {
-            padding: 12px 24px;
-            font-size: 16px;
+            padding: 12px 20px;
+            font-size: 15px;
             font-weight: bold;
             color: #fff;
             border: none;
@@ -58,18 +56,55 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             cursor: pointer;
             transition: transform 0.1s;
+            white-space: nowrap;
         }
         button:active { transform: translateY(2px) scale(0.98); }
 
         #switchCamBtn { background-color: rgba(0, 122, 255, 0.9); }
         #saveSnapBtn { background-color: rgba(255, 149, 0, 0.9); }
 
+        /* ======== ここからプレビュー画面のスタイル ======== */
+        #previewModal {
+            display: none; /* 初期状態は非表示 */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000;
+            z-index: 100;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: env(safe-area-inset-top, 20px); /* iPhoneのノッチ対応 */
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+
+        #closePreviewBtn {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .guide-text { font-size: 13px; color: #ffcc00; font-weight: bold; }
+
+        /* 画像を画面の縦横比に綺麗に収める（歪まない） */
+        #previewImage {
+            flex-grow: 1;
+            width: 100%;
+            height: 0; 
+            object-fit: contain; 
+        }
+
     </style>
 </head>
 <body>
     
     <video id="video" playsinline></video>
-    <!-- スマホのアスペクト比に合わせやすい解像度に設定 -->
     <canvas id="canvas" width="720" height="1280"></canvas>
 
     <div class="overlay-card">
@@ -80,8 +115,17 @@
     </div>
 
     <div class="button-container">
-        <button id="switchCamBtn">🔄 カメラ切替</button>
-        <button id="saveSnapBtn">📸 保存</button>
+        <button id="switchCamBtn">🔄 切替</button>
+        <button id="saveSnapBtn">📸 撮影＆保存</button>
+    </div>
+
+    <!-- プレビュー画面（撮影時に表示される） -->
+    <div id="previewModal">
+        <div class="modal-header">
+            <button id="closePreviewBtn">✕ カメラに戻る</button>
+            <span class="guide-text">長押しして「写真」に保存 👇</span>
+        </div>
+        <img id="previewImage" src="" alt="保存用画像">
     </div>
 
     <script src="app.js"></script>

@@ -8,7 +8,6 @@ const statusText = document.getElementById('statusText');
 const switchCamBtn = document.getElementById('switchCamBtn');
 const saveSnapBtn = document.getElementById('saveSnapBtn');
 
-// プレビュー画面用の要素を取得
 const previewModal = document.getElementById('previewModal');
 const previewImage = document.getElementById('previewImage');
 const closePreviewBtn = document.getElementById('closePreviewBtn');
@@ -18,6 +17,7 @@ let camera = null;
 let currentAngle = 0;
 let currentLoadInfo = null;
 
+// 前傾角度から首の負荷(kg)を推定する関数
 function estimateNeckLoad(angle) {
     if (angle <= 5) return { weight: "4.5 〜 5", status: "正常（理想的な姿勢）", color: "#2ea44f" };
     if (angle <= 15) return { weight: "約 12", status: "軽度の負荷（少し前傾）", color: "#e3b341" };
@@ -26,7 +26,9 @@ function estimateNeckLoad(angle) {
     return { weight: "約 27", status: "危険（強い負荷がかかっています）", color: "#8b0000" };
 }
 
+// MediaPipe 骨格検出時のメイン処理
 function onResults(results) {
+    // 歪み防止：カメラの実解像度にキャンバス解像度を自動追従
     if (videoElement.videoWidth && videoElement.videoHeight) {
         if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
             canvasElement.width = videoElement.videoWidth;
@@ -47,6 +49,7 @@ function onResults(results) {
         const leftShoulder = results.poseLandmarks[11];
         const rightShoulder = results.poseLandmarks[12];
 
+        // カメラにより良く映っている側の耳と肩を選択
         let ear = leftEar.visibility > rightEar.visibility ? leftEar : rightEar;
         let shoulder = leftEar.visibility > rightEar.visibility ? leftShoulder : rightShoulder;
 
@@ -62,11 +65,13 @@ function onResults(results) {
 
             currentLoadInfo = estimateNeckLoad(currentAngle);
 
+            // 画面上部カードの表示更新
             angleText.innerText = currentAngle;
             weightText.innerText = `約 ${currentLoadInfo.weight} kg`;
             statusText.innerText = currentLoadInfo.status;
             statusText.style.color = currentLoadInfo.color;
 
+            // 耳と肩を結ぶ線を描画
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
             canvasCtx.lineTo(earX, earY);
@@ -74,6 +79,7 @@ function onResults(results) {
             canvasCtx.lineWidth = Math.max(6, canvasElement.width * 0.01);
             canvasCtx.stroke();
 
+            // 垂直基準線を描画
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
             canvasCtx.lineTo(shoulderX, shoulderY - (canvasElement.height * 0.25));
@@ -92,10 +98,17 @@ function onResults(results) {
     canvasCtx.restore();
 }
 
+// MediaPipe Poseモデルの初期化（軽量版 modelComplexity: 0 を使用）
 const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
-pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+pose.setOptions({ 
+    modelComplexity: 0, 
+    smoothLandmarks: true, 
+    minDetectionConfidence: 0.5, 
+    minTrackingConfidence: 0.5 
+});
 pose.onResults(onResults);
 
+// カメラ起動・切り替えロジック
 function startCamera(facingMode) {
     if (camera) { camera.stop(); }
     camera = new Camera(videoElement, {
@@ -110,9 +123,7 @@ switchCamBtn.addEventListener('click', () => {
     startCamera(currentFacingMode);
 });
 
-// ==========================================
-// 撮影＆プレビュー表示処理
-// ==========================================
+// 撮影＆全画面プレビュー生成
 saveSnapBtn.addEventListener('click', () => {
     if (!currentLoadInfo) {
         alert("負荷が計測されていません。真横を向いてください。");
@@ -124,8 +135,10 @@ saveSnapBtn.addEventListener('click', () => {
     saveCanvas.height = canvasElement.height;
     const saveCtx = saveCanvas.getContext('2d');
 
+    // 映像とラインをコピー
     saveCtx.drawImage(canvasElement, 0, 0);
 
+    // テキスト情報を画像内に直接合成
     const padding = saveCanvas.width * 0.05;
     const boxHeight = saveCanvas.height * 0.22;
 
@@ -144,20 +157,16 @@ saveSnapBtn.addEventListener('click', () => {
     saveCtx.font = `${saveCanvas.width * 0.04}px sans-serif`;
     saveCtx.fillText(`前傾角度: ${currentAngle}°  |  ${currentLoadInfo.status}`, padding + 20, padding + (boxHeight * 0.85));
 
-    // 生成した画像をプレビュー画面の <img> タグにセット
-    const dataUrl = saveCanvas.toDataURL('image/png');
-    previewImage.src = dataUrl;
-    
-    // プレビュー画面を表示する
+    // 画像URL化してプレビューモーダルに読み込ませる
+    previewImage.src = saveCanvas.toDataURL('image/png');
     previewModal.style.display = 'flex';
 });
 
-// ==========================================
-// プレビュー画面を閉じる処理
-// ==========================================
+// プレビューモーダルを閉じる処理
 closePreviewBtn.addEventListener('click', () => {
     previewModal.style.display = 'none';
-    previewImage.src = ''; // メモリ解放のためにsrcを空にする
+    previewImage.src = '';
 });
 
+// 初回起動
 startCamera(currentFacingMode);

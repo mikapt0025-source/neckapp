@@ -8,6 +8,11 @@ const statusText = document.getElementById('statusText');
 const switchCamBtn = document.getElementById('switchCamBtn');
 const saveSnapBtn = document.getElementById('saveSnapBtn');
 
+// プレビュー画面用の要素を取得
+const previewModal = document.getElementById('previewModal');
+const previewImage = document.getElementById('previewImage');
+const closePreviewBtn = document.getElementById('closePreviewBtn');
+
 let currentFacingMode = 'user'; 
 let camera = null;
 let currentAngle = 0;
@@ -22,7 +27,6 @@ function estimateNeckLoad(angle) {
 }
 
 function onResults(results) {
-    // カメラの縦横比に合わせてキャンバス解像度を自動追従（歪み防止の核心）
     if (videoElement.videoWidth && videoElement.videoHeight) {
         if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
             canvasElement.width = videoElement.videoWidth;
@@ -32,8 +36,6 @@ function onResults(results) {
 
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    
-    // カメラ映像を描画
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
     currentLoadInfo = null;
@@ -65,7 +67,6 @@ function onResults(results) {
             statusText.innerText = currentLoadInfo.status;
             statusText.style.color = currentLoadInfo.color;
 
-            // 骨格線
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
             canvasCtx.lineTo(earX, earY);
@@ -73,7 +74,6 @@ function onResults(results) {
             canvasCtx.lineWidth = Math.max(6, canvasElement.width * 0.01);
             canvasCtx.stroke();
 
-            // 垂直基準線
             canvasCtx.beginPath();
             canvasCtx.moveTo(shoulderX, shoulderY);
             canvasCtx.lineTo(shoulderX, shoulderY - (canvasElement.height * 0.25));
@@ -110,6 +110,9 @@ switchCamBtn.addEventListener('click', () => {
     startCamera(currentFacingMode);
 });
 
+// ==========================================
+// 撮影＆プレビュー表示処理
+// ==========================================
 saveSnapBtn.addEventListener('click', () => {
     if (!currentLoadInfo) {
         alert("負荷が計測されていません。真横を向いてください。");
@@ -141,14 +144,20 @@ saveSnapBtn.addEventListener('click', () => {
     saveCtx.font = `${saveCanvas.width * 0.04}px sans-serif`;
     saveCtx.fillText(`前傾角度: ${currentAngle}°  |  ${currentLoadInfo.status}`, padding + 20, padding + (boxHeight * 0.85));
 
+    // 生成した画像をプレビュー画面の <img> タグにセット
     const dataUrl = saveCanvas.toDataURL('image/png');
-    const win = window.open();
-    if (win) {
-        win.document.write('<iframe src="' + dataUrl  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
-        win.document.title = "首の負荷チェック写真";
-    } else {
-        alert('ポップアップがブロックされました。許可してください。');
-    }
+    previewImage.src = dataUrl;
+    
+    // プレビュー画面を表示する
+    previewModal.style.display = 'flex';
+});
+
+// ==========================================
+// プレビュー画面を閉じる処理
+// ==========================================
+closePreviewBtn.addEventListener('click', () => {
+    previewModal.style.display = 'none';
+    previewImage.src = ''; // メモリ解放のためにsrcを空にする
 });
 
 startCamera(currentFacingMode);

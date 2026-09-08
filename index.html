@@ -12,34 +12,28 @@
         canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
 
+        /* ======== カメラ用 正方形グリッド ======== */
         #gridOverlay {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
             pointer-events: none;
             z-index: 2;
+            /* 画面幅の10%サイズの正方形マス目を作る */
+            background-size: 10vw 10vw;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.25) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
         }
 
-        .grid-line {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.2);
-            transition: background-color 0.2s, box-shadow 0.2s;
+        /* 水平（緑色）になった時の正方形グリッド */
+        #gridOverlay.is-level {
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 102, 0.8) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 102, 0.8) 1px, transparent 1px);
+            box-shadow: inset 0 0 20px rgba(0, 255, 102, 0.3); /* 画面のフチも少し光らせる */
         }
 
-        .v1 { left: 20%; top: 0; width: 1px; height: 100%; }
-        .v2 { left: 40%; top: 0; width: 1px; height: 100%; }
-        .v3 { left: 60%; top: 0; width: 1px; height: 100%; }
-        .v4 { left: 80%; top: 0; width: 1px; height: 100%; }
-
-        .h1 { top: 20%; left: 0; height: 1px; width: 100%; }
-        .h2 { top: 40%; left: 0; height: 1px; width: 100%; }
-        .h3 { top: 60%; left: 0; height: 1px; width: 100%; }
-        .h4 { top: 80%; left: 0; height: 1px; width: 100%; }
-
-        #gridOverlay.is-level .grid-line {
-            background-color: #00ff66;
-            box-shadow: 0 0 6px #00ff66;
-        }
-
+        /* ======== オーバーレイUI ======== */
         .overlay-card {
             position: absolute;
             top: 20px;
@@ -93,6 +87,7 @@
         #saveSnapBtn { background-color: rgba(255, 149, 0, 0.9); }
         #toggleTiltBtn { background-color: rgba(52, 199, 89, 0.9); }
 
+        /* ======== プレビュー画面 ======== */
         #previewModal {
             display: none;
             position: fixed;
@@ -134,16 +129,8 @@
     <video id="video" playsinline></video>
     <canvas id="canvas" width="720" height="1280"></canvas>
 
-    <div id="gridOverlay">
-        <div class="grid-line v1"></div>
-        <div class="grid-line v2"></div>
-        <div class="grid-line v3"></div>
-        <div class="grid-line v4"></div>
-        <div class="grid-line h1"></div>
-        <div class="grid-line h2"></div>
-        <div class="grid-line h3"></div>
-        <div class="grid-line h4"></div>
-    </div>
+    <!-- CSSによる正方形グリッドオーバーレイ -->
+    <div id="gridOverlay"></div>
 
     <div class="overlay-card">
         <div class="title">首への推定負荷</div>

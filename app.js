@@ -170,3 +170,30 @@ closePreviewBtn.addEventListener('click', () => {
 
 // 初回起動
 startCamera(currentFacingMode);
+
+// 端末の傾きチェック用の変数
+let isDeviceVertical = true;
+
+// iPhone/iPadの傾きセンサー（ジャイロ）イベント
+if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+        // beta: 前後の傾き（垂直に立てると約 90度 になる）
+        const pitch = Math.abs(event.beta);
+
+        // 垂直（90度）から前後に10度以上傾いているかチェック
+        if (pitch < 80 || pitch > 100) {
+            isDeviceVertical = false;
+        } else {
+            isDeviceVertical = true;
+        }
+    });
+}
+
+// onResults 関数内の先頭に以下を追加して、傾いている時は計測をストップする
+/*
+if (!isDeviceVertical) {
+    statusText.innerText = "📱 スマホを垂直に立ててください";
+    statusText.style.color = "orange";
+    return; // 垂直になっていない時はここで処理を中断
+}
+*/

@@ -12,6 +12,32 @@
         canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
 
+        /* ======== カメラ用グリッド線（水準器） ======== */
+        #gridOverlay {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .grid-line {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .vert-1 { left: 33.33%; top: 0; width: 1.5px; height: 100%; }
+        .vert-2 { left: 66.66%; top: 0; width: 1.5px; height: 100%; }
+        .horiz-1 { top: 33.33%; left: 0; height: 1.5px; width: 100%; }
+        .horiz-2 { top: 66.66%; left: 0; height: 1.5px; width: 100%; }
+
+        /* 垂直（水平OK）になった時に緑色に発光 */
+        #gridOverlay.is-level .grid-line {
+            background-color: #00ff66;
+            box-shadow: 0 0 8px #00ff66;
+        }
+
+        /* ======== オーバーレイUI ======== */
         .overlay-card {
             position: absolute;
             top: 20px;
@@ -103,6 +129,14 @@
     
     <video id="video" playsinline></video>
     <canvas id="canvas" width="720" height="1280"></canvas>
+
+    <!-- 水平・垂直検知用グリッド -->
+    <div id="gridOverlay">
+        <div class="grid-line vert-1"></div>
+        <div class="grid-line vert-2"></div>
+        <div class="grid-line horiz-1"></div>
+        <div class="grid-line horiz-2"></div>
+    </div>
 
     <div class="overlay-card">
         <div class="title">首への推定負荷</div>

@@ -29,6 +29,7 @@
             box-sizing: border-box;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             text-align: center;
+            z-index: 5;
         }
 
         .title { font-size: 14px; color: #555; margin-bottom: 5px; font-weight: bold; }
@@ -36,23 +37,33 @@
         .angle-val { font-size: 16px; color: #333; margin-bottom: 5px; }
         .status { font-size: 15px; font-weight: bold; margin-top: 5px; }
         
-        /* カメラ切替ボタンを画面下部に配置 */
-        #switchCamBtn {
+        /* ボタンを画面下部に配置するコンテナ */
+        .button-container {
             position: absolute;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
             padding: 12px 24px;
             font-size: 16px;
             font-weight: bold;
             color: #fff;
-            background-color: rgba(0, 122, 255, 0.9);
             border: none;
             border-radius: 25px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             cursor: pointer;
-            z-index: 10;
+            transition: transform 0.1s;
         }
+        button:active { transform: translateY(2px) scale(0.98); }
+
+        #switchCamBtn { background-color: rgba(0, 122, 255, 0.9); }
+        #saveSnapBtn { background-color: rgba(255, 149, 0, 0.9); }
+
     </style>
 </head>
 <body>
@@ -68,7 +79,10 @@
         <div class="status" id="statusText">真横を向いてカメラに映ってください</div>
     </div>
 
-    <button id="switchCamBtn">🔄 カメラ切替</button>
+    <div class="button-container">
+        <button id="switchCamBtn">🔄 カメラ切替</button>
+        <button id="saveSnapBtn">📸 保存</button>
+    </div>
 
     <script src="app.js"></script>
 </body>

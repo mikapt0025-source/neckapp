@@ -5,6 +5,7 @@ const canvasCtx = canvasElement.getContext('2d');
 const angleText = document.getElementById('angleText');
 const weightText = document.getElementById('weightText');
 const statusText = document.getElementById('statusText');
+const tiltText = document.getElementById('tiltText');
 const switchCamBtn = document.getElementById('switchCamBtn');
 const saveSnapBtn = document.getElementById('saveSnapBtn');
 const gridOverlay = document.getElementById('gridOverlay');
@@ -17,14 +18,16 @@ let currentFacingMode = 'user';
 let camera = null;
 let currentAngle = 0;
 let currentLoadInfo = null;
-let isDeviceVertical = false;
 
-// スマホの傾き検知（±5度以内＝85°〜95°でグリーン点灯）
+let isDeviceVertical = true; // センサー未対応端末でのフリーズ防止のため初期値はtrue
+let currentPitch = null;
+
+// スマホの傾き検知（85°〜95°で緑発光）
 if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', (event) => {
         if (event.beta !== null) {
-            const pitch = Math.abs(event.beta);
-            isDeviceVertical = (pitch >= 85 && pitch <= 95);
+            currentPitch = Math.round(Math.abs(event.beta));
+            isDeviceVertical = (currentPitch >= 85 && currentPitch <= 95);
         }
     });
 }
@@ -52,11 +55,18 @@ function onResults(results) {
     currentLoadInfo = null;
     currentAngle = 0;
 
-    // スマホの傾き状態によってグリッドの色と判定を制御
-    if (isDeviceVertical) {
-        gridOverlay.classList.add('is-level'); // グリッドを緑色に発光させる
+    // スマホ傾きのリアルタイム数値表示
+    if (currentPitch !== null) {
+        tiltText.innerText = `📱 スマホ傾き: ${currentPitch}° (目標: 90°)`;
     } else {
-        gridOverlay.classList.remove('is-level'); // 白い半透明に戻す
+        tiltText.innerText = `📱 スマホ傾き: 垂直に立ててください`;
+    }
+
+    // 傾き判定による表示切り替え
+    if (isDeviceVertical) {
+        gridOverlay.classList.add('is-level');
+    } else {
+        gridOverlay.classList.remove('is-level');
         statusText.innerText = "📱 スマホをまっすぐ立ててください";
         statusText.style.color = "#f85149";
         weightText.innerText = "-- kg";

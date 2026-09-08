@@ -63,9 +63,9 @@
         #switchCamBtn { background-color: rgba(0, 122, 255, 0.9); }
         #saveSnapBtn { background-color: rgba(255, 149, 0, 0.9); }
 
-        /* ======== ここからプレビュー画面のスタイル ======== */
+        /* 撮影後の全画面プレビュー画面 */
         #previewModal {
-            display: none; /* 初期状態は非表示 */
+            display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000;
@@ -78,7 +78,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            padding-top: env(safe-area-inset-top, 20px); /* iPhoneのノッチ対応 */
+            padding-top: env(safe-area-inset-top, 20px);
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
         }
@@ -92,14 +92,12 @@
 
         .guide-text { font-size: 13px; color: #ffcc00; font-weight: bold; }
 
-        /* 画像を画面の縦横比に綺麗に収める（歪まない） */
         #previewImage {
             flex-grow: 1;
             width: 100%;
             height: 0; 
             object-fit: contain; 
         }
-
     </style>
 </head>
 <body>
@@ -119,7 +117,6 @@
         <button id="saveSnapBtn">📸 撮影＆保存</button>
     </div>
 
-    <!-- プレビュー画面（撮影時に表示される） -->
     <div id="previewModal">
         <div class="modal-header">
             <button id="closePreviewBtn">✕ カメラに戻る</button>

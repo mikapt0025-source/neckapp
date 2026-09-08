@@ -2,36 +2,73 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>首の負荷チェッカー</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
     <style>
-        body { text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; }
-        .container { position: relative; display: inline-block; width: 100%; max-width: 480px; }
+        /* 画面全体のスクロールを禁止し、背景を黒に */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        /* キャンバスを全画面に広げる */
+        canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
-        canvas { width: 100%; height: auto; border-radius: 12px; background-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .card { margin-top: 15px; padding: 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 480px; margin-left: auto; margin-right: auto; }
-        h1 { font-size: 20px; color: #333; margin-bottom: 10px; }
-        .result-val { font-size: 28px; font-weight: bold; margin: 10px 0; color: #111; }
-        .status { font-size: 16px; font-weight: bold; margin-top: 5px; }
-        button { margin-top: 10px; padding: 10px 20px; font-size: 14px; font-weight: bold; color: #fff; background-color: #007aff; border: none; border-radius: 8px; cursor: pointer; }
+
+        /* 計測結果を画面上部に半透明のパネルで重ねる */
+        .overlay-card {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            border-radius: 16px;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .title { font-size: 14px; color: #555; margin-bottom: 5px; font-weight: bold; }
+        .result-val { font-size: 32px; font-weight: 900; margin: 5px 0; color: #111; }
+        .angle-val { font-size: 16px; color: #333; margin-bottom: 5px; }
+        .status { font-size: 15px; font-weight: bold; margin-top: 5px; }
+        
+        /* カメラ切替ボタンを画面下部に配置 */
+        #switchCamBtn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: rgba(0, 122, 255, 0.9);
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
-    <h1>首の負荷判定ツール</h1>
     
-    <div class="container">
-        <video id="video" playsinline></video>
-        <canvas id="canvas" width="480" height="640"></canvas>
+    <video id="video" playsinline></video>
+    <!-- スマホのアスペクト比に合わせやすい解像度に設定 -->
+    <canvas id="canvas" width="720" height="1280"></canvas>
+
+    <div class="overlay-card">
+        <div class="title">首への推定負荷</div>
+        <div class="result-val" id="weightText">準備中...</div>
+        <div class="angle-val">前傾角度: <span id="angleText">--</span>°</div>
+        <div class="status" id="statusText">真横を向いてカメラに映ってください</div>
     </div>
 
-    <div class="card">
-        <div>前傾角度: <span id="angleText">--</span>°</div>
-        <div class="result-val" id="weightText">約 -- kg</div>
-        <div class="status" id="statusText">真横を向いてカメラに映ってください</div>
-        <button id="switchCamBtn">内 / 外 カメラ切替</button>
-    </div>
+    <button id="switchCamBtn">🔄 カメラ切替</button>
 
     <script src="app.js"></script>
 </body>

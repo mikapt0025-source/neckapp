@@ -12,7 +12,6 @@
         canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
         video { display: none; }
 
-        /* ======== カメラ用細密グリッド線（水準器） ======== */
         #gridOverlay {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -26,25 +25,21 @@
             transition: background-color 0.2s, box-shadow 0.2s;
         }
 
-        /* 縦方向のライン（20%, 40%, 60%, 80%） */
         .v1 { left: 20%; top: 0; width: 1px; height: 100%; }
         .v2 { left: 40%; top: 0; width: 1px; height: 100%; }
         .v3 { left: 60%; top: 0; width: 1px; height: 100%; }
         .v4 { left: 80%; top: 0; width: 1px; height: 100%; }
 
-        /* 横方向のライン（20%, 40%, 60%, 80%） */
         .h1 { top: 20%; left: 0; height: 1px; width: 100%; }
         .h2 { top: 40%; left: 0; height: 1px; width: 100%; }
         .h3 { top: 60%; left: 0; height: 1px; width: 100%; }
         .h4 { top: 80%; left: 0; height: 1px; width: 100%; }
 
-        /* 垂直（85°〜95°）になった時に緑色に発光 */
         #gridOverlay.is-level .grid-line {
             background-color: #00ff66;
             box-shadow: 0 0 6px #00ff66;
         }
 
-        /* ======== オーバーレイUI ======== */
         .overlay-card {
             position: absolute;
             top: 20px;
@@ -74,15 +69,15 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
+            gap: 10px;
             z-index: 10;
-            width: 90%;
+            width: 95%;
             justify-content: center;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 15px;
+            padding: 12px 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #fff;
             border: none;
@@ -96,6 +91,7 @@
 
         #switchCamBtn { background-color: rgba(0, 122, 255, 0.9); }
         #saveSnapBtn { background-color: rgba(255, 149, 0, 0.9); }
+        #toggleTiltBtn { background-color: rgba(52, 199, 89, 0.9); }
 
         #previewModal {
             display: none;
@@ -138,7 +134,6 @@
     <video id="video" playsinline></video>
     <canvas id="canvas" width="720" height="1280"></canvas>
 
-    <!-- 細密グリッドライン -->
     <div id="gridOverlay">
         <div class="grid-line v1"></div>
         <div class="grid-line v2"></div>
@@ -154,12 +149,13 @@
         <div class="title">首への推定負荷</div>
         <div class="result-val" id="weightText">準備中...</div>
         <div class="angle-val">首の前傾角度: <span id="angleText">--</span>°</div>
-        <div class="tilt-val" id="tiltText">📱 スマホ傾き: --° (目標: 90°)</div>
+        <div class="tilt-val" id="tiltText">画面をタップしてセンサー起動</div>
         <div class="status" id="statusText">真横を向いてカメラに映ってください</div>
     </div>
 
     <div class="button-container">
         <button id="switchCamBtn">🔄 切替</button>
+        <button id="toggleTiltBtn">📐 傾き制限: ON</button>
         <button id="saveSnapBtn">📸 撮影＆保存</button>
     </div>
 
